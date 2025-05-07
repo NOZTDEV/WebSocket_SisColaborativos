@@ -89,12 +89,6 @@ WebSocket_SisColaborativos/
 
 ---
 
-## 👤 Autor
-
-- **Abel (NOZTDEV)** - [GitHub](https://github.com/NOZTDEV)
-
----
-
 ## 📄 Licencia
 
 Este proyecto se distribuye bajo la licencia MIT.
