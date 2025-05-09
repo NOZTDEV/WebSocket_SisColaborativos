@@ -69,6 +69,7 @@ http://192.168.0.104:3000
 1. Al cargar la página, se te asignará un nombre de usuario temporal.
 2. Escribe un mensaje y presiona Enter para enviarlo.
 3. Verás el historial de mensajes, conexiones y desconexiones.
+4. Para ver las desconecciones refresca la pagina y tambien se unira con otro usaurio
 
 ---
 
