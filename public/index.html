@@ -1,14 +1,36 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <title>Chat WebSocket</title>
-  <link rel="stylesheet" href="styles.css" />
-</head>
-<body>
-  <h1>Chat en Tiempo Real SyncTec (G4)</h1>
-  <div id="chat"></div>
-  <input type="text" id="input" placeholder="Escribe un mensaje..." autofocus />
-  <script src="script.js"></script>
-</body>
+   <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>Chat Mejorado</title>
+      <link rel="stylesheet" href="styles.css" />
+   </head>
+   <body>
+      <div id="name-modal">
+         <div class="modal-content">
+            <h2>Ingresa tu Nombre</h2>
+            <input type="text" id="username-input" placeholder="Tu nombre..." autofocus />
+            <button id="join-button">Unirse al Chat</button>
+         </div>
+      </div>
+
+      <div id="chat-container" style="display: none">
+         <header>
+            <h1>Chat en Tiempo Real</h1>
+            <p>Conectado como: <span id="current-username"></span></p>
+         </header>
+         <div id="chat-window">
+            <div id="chat-messages">
+               <!-- Los mensajes aparecerán aquí -->
+            </div>
+         </div>
+         <div id="input-area">
+            <input type="text" id="message-input" placeholder="Escribe un mensaje..." />
+            <button id="send-button">Enviar</button>
+         </div>
+      </div>
+
+      <script src="script.js"></script>
+   </body>
 </html>
