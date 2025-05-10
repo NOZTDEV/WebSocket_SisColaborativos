@@ -1,48 +1,104 @@
-const express = require('express'); // Importar express
-const http = require('http'); // Importar http
-const WebSocket = require('ws'); // Importar ws
+const express = require("express");
+const http = require("http");
+const WebSocket = require("ws");
 
-const app = express(); // Crear una aplicación express
-const server = http.createServer(app); // Crear un servidor HTTP
-const wss = new WebSocket.Server({ server }); // Crear un servidor WebSocket
+const app = express();
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
 
-// Mapa para guardar las conexiones y sus nombres de usuario
 const clients = new Map();
+let userIdCounter = 0;
 
-// Evento: nuevo cliente conectado
-wss.on('connection', (ws) => {
-  const username = `Usuario_${Math.floor(Math.random() * 1000)}`; 
-  clients.set(ws, username); //Guaradar la conexión y el nombre de usuario
+wss.on("connection", (ws) => {
+   const clientId = `client_${userIdCounter++}`;
+   console.log(`Cliente ${clientId} conectado, esperando nombre.`);
 
-  broadcast({ type: 'notification', message: `${username} se ha unido al chat.` });
+   ws.on("message", (data) => {
+      try {
+         const msg = JSON.parse(data);
 
-  // Evento: mensaje recibido desde cliente
-  ws.on('message', (data) => {
-    const msg = JSON.parse(data);
-    broadcast({ type: 'message', username, message: msg.message });
-  });
+         if (msg.type === "join" && msg.username) {
+            const username = msg.username.trim();
+            if (username) {
+               clients.set(ws, { username: username, id: clientId });
+               console.log(`${username} (ID: ${clientId}) se ha unido al chat.`);
+               broadcast({
+                  type: "notification",
+                  message: `${username} se ha unido al chat.`,
+                  timestamp: new Date().toLocaleTimeString(),
+               });
+               ws.send(JSON.stringify({ type: "identity", id: clientId, username: username }));
+            } else {
+               ws.send(JSON.stringify({ type: "error", message: "Nombre de usuario no puede estar vacío." }));
+               ws.close();
+            }
+         } else if (msg.type === "message" && typeof msg.text === "string") {
+            const clientInfo = clients.get(ws);
+            if (clientInfo && clientInfo.username) {
+               broadcast({
+                  type: "message",
+                  username: clientInfo.username,
+                  id: clientInfo.id,
+                  text: msg.text,
+                  timestamp: new Date().toLocaleTimeString(),
+               });
+            } else {
+               console.warn(`Mensaje de tipo 'message' recibido de cliente no identificado o sin texto: ${clientId}`);
+            }
+         } else {
+            console.warn(`Mensaje de tipo desconocido o malformado recibido de ${clientId}:`, msg);
+         }
+      } catch (error) {
+         console.error(`Error procesando mensaje de ${clientId}:`, error, "Data:", data);
+         ws.send(JSON.stringify({ type: "error", message: "Hubo un error procesando tu solicitud." }));
+      }
+   });
 
-  // Evento: cliente se desconecta
-  ws.on('close', () => {
-    clients.delete(ws);
-    broadcast({ type: 'notification', message: `${username} ha salido del chat.` });
-  });
+   ws.on("close", () => {
+      const clientInfo = clients.get(ws);
+      if (clientInfo) {
+         clients.delete(ws);
+         console.log(`${clientInfo.username} (ID: ${clientInfo.id}) ha salido del chat.`);
+         broadcast({
+            type: "notification",
+            message: `${clientInfo.username} ha salido del chat.`,
+            timestamp: new Date().toLocaleTimeString(),
+         });
+      } else {
+         console.log(`Cliente ${clientId} desconectado antes de unirse formalmente.`);
+      }
+   });
+
+   ws.on("error", (error) => {
+      console.error(`Error en WebSocket para cliente ${clientId}:`, error);
+      const clientInfo = clients.get(ws);
+      if (clientInfo) {
+         clients.delete(ws);
+         broadcast({
+            type: "notification",
+            message: `${clientInfo.username} se ha desconectado debido a un error.`,
+            timestamp: new Date().toLocaleTimeString(),
+         });
+      }
+   });
 });
 
-// Función para enviar un mensaje a todos los clientes
 function broadcast(data) {
-  const msg = JSON.stringify(data);
-  for (const client of clients.keys()) {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(msg); //Enviar el mensaje a cada cliente conectado
-    }
-  }
+   const msgString = JSON.stringify(data);
+   for (const clientWs of clients.keys()) {
+      if (clientWs.readyState === WebSocket.OPEN) {
+         try {
+            clientWs.send(msgString);
+         } catch (sendError) {
+            console.error("Error enviando mensaje a un cliente:", sendError);
+         }
+      }
+   }
 }
 
-// Servir la interfaz web desde la carpeta 'public'
-app.use(express.static('public'));
+app.use(express.static("public"));
 
-// Iniciar el servidor en el puerto 3000
-server.listen(3000, () => {
-  console.log('Servidor iniciado en http://localhost:3000');
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+   console.log(`Servidor iniciado en http://localhost:${PORT}`);
 });
